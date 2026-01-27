@@ -599,8 +599,9 @@ class WorkflowController:
             ai_settings = event_config.get("ai_content_settings", {})
             model = ai_settings.get("model", "qwen2.5:latest")
             summary_length = ai_settings.get("summary_length", "medium")
+            summary_languages = ai_settings.get("summary_languages", ["en"])
             
-            self.logger.info(f"Using AI model: {model}, summary length: {summary_length}")
+            self.logger.info(f"Using AI model: {model}, summary length: {summary_length}, languages: {summary_languages}")
             
             # Initialize processor
             processor = AIContentProcessor(model=model, logger=self.logger)
@@ -611,7 +612,8 @@ class WorkflowController:
                 output_dir=str(output_dir),
                 correct_subtitles=False,
                 generate_summary=True,
-                summary_length=summary_length
+                summary_length=summary_length,
+                summary_languages=summary_languages
             )
             
             if success:

@@ -32,6 +32,7 @@ class EventManager:
         ai_correct_subtitles: bool = True,
         ai_generate_summary: bool = True,
         ai_summary_length: str = "medium",
+        ai_summary_languages: List[str] = None,
         modules: Optional[Dict[str, bool]] = None
     ) -> str:
         """
@@ -52,6 +53,7 @@ class EventManager:
             ai_correct_subtitles: Enable subtitle correction
             ai_generate_summary: Enable summary generation
             ai_summary_length: Summary length (short/medium/long)
+            ai_summary_languages: List of language codes for summaries
             modules: Module toggle configuration (optional)
             
         Returns:
@@ -62,6 +64,10 @@ class EventManager:
             date = datetime.now().strftime("%Y-%m-%d")
         if not time:
             time = datetime.now().strftime("%H%M")
+        
+        # Default summary languages
+        if ai_summary_languages is None:
+            ai_summary_languages = ["en"]
         
         # Create safe slug from title
         slug = self._slugify(title)
@@ -94,7 +100,8 @@ class EventManager:
                 "model": ai_model,
                 "correct_subtitles": ai_correct_subtitles,
                 "generate_summary": ai_generate_summary,
-                "summary_length": ai_summary_length
+                "summary_length": ai_summary_length,
+                "summary_languages": ai_summary_languages
             },
             "scripture": scripture,
             "speaker": speaker,

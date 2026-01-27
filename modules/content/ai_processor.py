@@ -254,15 +254,17 @@ Output corrected SRT (MUST be {len(batch)} blocks, same format):"""
         self,
         srt_path: str,
         output_dir: str,
-        summary_length: str = "medium"
+        summary_length: str = "medium",
+        languages: List[str] = None
     ) -> Tuple[bool, Optional[str], Dict[str, str]]:
         """
-        Generate content summary from subtitles
+        Generate content summary from subtitles in multiple languages
         
         Args:
             srt_path: Path to SRT file (preferably corrected version)
             output_dir: Directory to save summary
             summary_length: "short", "medium", or "long"
+            languages: List of language codes (e.g., ["en", "zh", "es"]). If None, defaults to ["en"]
             
         Returns:
             (success, error_message, output_files)
@@ -274,7 +276,28 @@ Output corrected SRT (MUST be {len(batch)} blocks, same format):"""
             if not self._check_model_available():
                 return False, f"Model {self.model} not available", {}
             
-            self.logger.info(f"Generating summary from: {srt_path}")
+            # Default to English if no languages specified
+            if not languages:
+                languages = ["en"]
+            
+            # Language mapping
+            language_names = {
+                "en": "English",
+                "zh": "Chinese (中文)",
+                "zh-CN": "Simplified Chinese (简体中文)",
+                "zh-TW": "Traditional Chinese (繁體中文)",
+                "es": "Spanish (Español)",
+                "fr": "French (Français)",
+                "de": "German (Deutsch)",
+                "ja": "Japanese (日本語)",
+                "ko": "Korean (한국어)",
+                "pt": "Portuguese (Português)",
+                "ru": "Russian (Русский)",
+                "ar": "Arabic (العربية)",
+                "hi": "Hindi (हिन्दी)"
+            }
+            
+            self.logger.info(f"Generating summary from: {srt_path} in languages: {languages}")
             
             # Parse and extract all text
             subtitles = self._parse_srt(srt_path)
@@ -292,32 +315,6 @@ Output corrected SRT (MUST be {len(batch)} blocks, same format):"""
             
             length_instruction = length_instructions.get(summary_length, length_instructions["medium"])
             
-            system_prompt = """You are a sermon/speech summarization assistant. Your task is to:
-1. Identify the main topics and themes
-2. Extract key points and important messages
-3. Note any scripture references or important quotes
-4. Capture the overall message and purpose
-5. Write in a clear, organized manner"""
-            
-            prompt = f"""Please create {length_instruction} of the following sermon/speech transcript:
-
-{full_text}
-
-Include:
-- Main topic and theme
-- Key points discussed
-- Important messages or takeaways
-- Any notable quotes or references
-
-Summary:"""
-            
-            self.logger.info("Calling AI to generate summary...")
-            summary_text = self._call_ollama(prompt, system_prompt)
-            
-            if not summary_text:
-                return False, "Failed to generate summary", {}
-            
-            # Save summary
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
             
@@ -327,18 +324,72 @@ Summary:"""
             elif base_name.endswith('_audio'):
                 base_name = base_name[:-6]
             
-            summary_file = output_path / f"{base_name}_summary.txt"
+            output_files = {}
             
-            with open(summary_file, 'w', encoding='utf-8') as f:
-                f.write(f"# Content Summary\n\n")
-                f.write(f"Generated from: {Path(srt_path).name}\n")
-                f.write(f"Summary length: {summary_length}\n\n")
-                f.write("---\n\n")
-                f.write(summary_text)
+            # Generate summary for each requested language
+            for lang_code in languages:
+                lang_name = language_names.get(lang_code, lang_code)
+                self.logger.info(f"Generating {lang_name} summary...")
+                
+                system_prompt = f"""You are creating a SERMON TRANSCRIPT SUMMARY.
+
+Your job is NOT to create a theologically complete sermon summary.
+Your job is to faithfully reflect ONLY what the preacher actually said.
+
+Rules:
+1. Do NOT add Bible verses unless they were clearly mentioned.
+2. Do NOT invent structure (like "first day / second day") unless explicitly stated.
+3. If something is unclear in the transcript, say "The preacher seems to imply…" instead of completing it.
+4. Focus on:
+   - What passages were actually read or explained
+   - How the preacher defined key terms (like "covenant")
+   - What historical flow of the Bible he described
+   - How he connected it to Jesus or the New Covenant (only if explicitly stated)
+
+This is a historical-faithful summary task, not a devotional or theological writing task.
+Write the entire summary in {lang_name}."""
+                
+                prompt = f"""Please create {length_instruction} of the following sermon transcript.
+
+IMPORTANT: Write the entire summary in {lang_name}.
+
+{full_text}
+
+Remember:
+- Only include what was explicitly stated
+- Use "The preacher seems to imply..." for unclear parts
+- Do not add theological interpretation beyond what was said
+- Focus on the actual content, structure, and flow of the sermon
+
+Summary in {lang_name}:"""
+                
+                summary_text = self._call_ollama(prompt, system_prompt)
+                
+                if not summary_text:
+                    self.logger.warning(f"Failed to generate {lang_name} summary")
+                    continue
+                
+                # Save summary with language code
+                if len(languages) == 1:
+                    summary_file = output_path / f"{base_name}_summary.txt"
+                else:
+                    summary_file = output_path / f"{base_name}_summary_{lang_code}.txt"
+                
+                with open(summary_file, 'w', encoding='utf-8') as f:
+                    f.write(f"# Content Summary ({lang_name})\n\n")
+                    f.write(f"Generated from: {Path(srt_path).name}\n")
+                    f.write(f"Summary length: {summary_length}\n")
+                    f.write(f"Language: {lang_name}\n\n")
+                    f.write("---\n\n")
+                    f.write(summary_text)
+                
+                self.logger.info(f"{lang_name} summary saved to: {summary_file}")
+                output_files[f"summary_{lang_code}"] = str(summary_file)
             
-            self.logger.info(f"Summary saved to: {summary_file}")
+            if not output_files:
+                return False, "Failed to generate any summaries", {}
             
-            return True, None, {"summary": str(summary_file)}
+            return True, None, output_files
             
         except Exception as e:
             error_msg = f"Summary generation failed: {str(e)}"
@@ -352,6 +403,7 @@ Summary:"""
         correct_subtitles: bool = True,
         generate_summary: bool = True,
         summary_length: str = "medium",
+        summary_languages: List[str] = None,
         batch_size: int = 10
     ) -> Tuple[bool, Optional[str], Dict[str, str]]:
         """
@@ -363,6 +415,7 @@ Summary:"""
             correct_subtitles: Whether to correct subtitles
             generate_summary: Whether to generate summary
             summary_length: Summary length ("short", "medium", "long")
+            summary_languages: List of language codes for summaries (e.g., ["en", "zh"])
             batch_size: Batch size for subtitle correction
             
         Returns:
@@ -384,7 +437,12 @@ Summary:"""
         
         # Step 2: Generate summary
         if generate_summary:
-            success, error, files = self.generate_summary(srt_for_summary, output_dir, summary_length)
+            success, error, files = self.generate_summary(
+                srt_for_summary, 
+                output_dir, 
+                summary_length,
+                summary_languages
+            )
             if not success:
                 return False, f"Summary generation failed: {error}", output_files
             output_files.update(files)

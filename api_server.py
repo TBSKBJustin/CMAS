@@ -51,6 +51,7 @@ class EventCreate(BaseModel):
     ai_correct_subtitles: bool = True
     ai_generate_summary: bool = True
     ai_summary_length: str = "medium"
+    ai_summary_languages: List[str] = ["en"]
     modules: Optional[Dict[str, Any]] = None
 
 
@@ -128,6 +129,7 @@ async def create_event(event_data: EventCreate):
             ai_correct_subtitles=event_data.ai_correct_subtitles,
             ai_generate_summary=event_data.ai_generate_summary,
             ai_summary_length=event_data.ai_summary_length,
+            ai_summary_languages=event_data.ai_summary_languages,
             modules=event_data.modules
         )
         

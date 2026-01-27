@@ -18,6 +18,7 @@ export default function EventCreate() {
     ai_correct_subtitles: true,
     ai_generate_summary: true,
     ai_summary_length: 'medium',
+    ai_summary_languages: ['en'],
     modules: {
       thumbnail_ai: true,
       thumbnail_compose: true,
@@ -344,6 +345,49 @@ export default function EventCreate() {
               <option value="medium">Medium (4-5 paragraphs)</option>
               <option value="long">Long (6-8 paragraphs)</option>
             </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Summary Languages (可多选)
+            </label>
+            <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3">
+              {[
+                { code: 'en', name: 'English' },
+                { code: 'zh', name: '中文 (Chinese)' },
+                { code: 'zh-CN', name: '简体中文 (Simplified Chinese)' },
+                { code: 'zh-TW', name: '繁體中文 (Traditional Chinese)' },
+                { code: 'es', name: 'Español (Spanish)' },
+                { code: 'fr', name: 'Français (French)' },
+                { code: 'de', name: 'Deutsch (German)' },
+                { code: 'ja', name: '日本語 (Japanese)' },
+                { code: 'ko', name: '한국어 (Korean)' },
+                { code: 'pt', name: 'Português (Portuguese)' },
+                { code: 'ru', name: 'Русский (Russian)' },
+                { code: 'ar', name: 'العربية (Arabic)' },
+                { code: 'hi', name: 'हिन्दी (Hindi)' }
+              ].map(lang => (
+                <label key={lang.code} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                  <input
+                    type="checkbox"
+                    checked={formData.ai_summary_languages.includes(lang.code)}
+                    onChange={(e) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        ai_summary_languages: e.target.checked
+                          ? [...prev.ai_summary_languages, lang.code]
+                          : prev.ai_summary_languages.filter(l => l !== lang.code)
+                      }))
+                    }}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{lang.name}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.ai_summary_languages.length} language(s) selected
+            </p>
           </div>
         </div>
         
