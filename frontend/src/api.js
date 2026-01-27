@@ -39,6 +39,11 @@ export const installDependency = async (depKey) => {
   return data
 }
 
+export const configureCustomPath = async (depKey, path) => {
+  const { data } = await api.post(`/dependencies/${depKey}/configure-path`, { path })
+  return data
+}
+
 // System
 export const getSystemStatus = async () => {
   const { data } = await api.get('/status')

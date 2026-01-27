@@ -160,6 +160,70 @@ async def install_dependency(dep_key: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post('/api/dependencies/{dep_key}/configure-path')
+async def configure_custom_path(dep_key: str, path_data: dict):
+    """Configure custom path for a dependency"""
+    custom_path = path_data.get('path', '').strip()
+    
+    if not custom_path:
+        raise HTTPException(status_code=400, detail='Path is required')
+    
+    try:
+        # Use the dependency manager's configure method
+        import yaml
+        from pathlib import Path
+        import os
+        import subprocess
+        
+        # Validate path exists
+        if not os.path.exists(custom_path):
+            raise HTTPException(status_code=400, detail=f'Path does not exist: {custom_path}')
+        
+        # Test the executable
+        try:
+            result = subprocess.run(
+                [custom_path, '--help'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode != 0:
+                raise HTTPException(status_code=400, detail='Executable test failed')
+        except subprocess.TimeoutExpired:
+            raise HTTPException(status_code=400, detail='Executable test timed out')
+        except FileNotFoundError:
+            raise HTTPException(status_code=400, detail='File is not executable')
+        
+        # Update config file
+        config_path = Path('config/config.yaml')
+        if not config_path.exists():
+            raise HTTPException(status_code=500, detail='Config file not found')
+        
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f) or {}
+        
+        if dep_key == 'whisper.cpp':
+            if 'modules' not in config:
+                config['modules'] = {}
+            if 'subtitles' not in config['modules']:
+                config['modules']['subtitles'] = {}
+            if 'whispercpp' not in config['modules']['subtitles']:
+                config['modules']['subtitles']['whispercpp'] = {}
+            
+            config['modules']['subtitles']['whispercpp']['custom_path'] = custom_path
+            config['modules']['subtitles']['whispercpp']['whisper_bin'] = custom_path
+        
+        with open(config_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        
+        return {'message': 'Custom path configured successfully', 'path': custom_path}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get('/api/dependencies/{dep_key}')
 async def check_dependency(dep_key: str):
     """Check specific dependency"""

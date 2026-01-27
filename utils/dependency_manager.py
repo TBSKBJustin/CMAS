@@ -93,9 +93,13 @@ class DependencyManager:
             return 'windows'
         return 'unknown'
     
-    def check_dependency(self, dep_key: str) -> Tuple[bool, Optional[str]]:
+    def check_dependency(self, dep_key: str, custom_path: Optional[str] = None) -> Tuple[bool, Optional[str]]:
         """
         Check if a dependency is installed
+        
+        Args:
+            dep_key: Dependency key
+            custom_path: Optional custom path to check first
         
         Returns:
             (is_installed, version_or_path)
@@ -103,6 +107,20 @@ class DependencyManager:
         dep = self.DEPENDENCIES.get(dep_key)
         if not dep:
             return False, None
+        
+        # Check custom path first
+        if custom_path and os.path.exists(custom_path):
+            try:
+                result = subprocess.run(
+                    [custom_path, '--help'],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    return True, f"Custom: {custom_path}"
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                pass
         
         # Check via command
         if dep.get('check_cmd'):
@@ -257,9 +275,11 @@ class DependencyManager:
             for dep_key in missing_optional:
                 dep = self.DEPENDENCIES[dep_key]
                 print(f"\n{dep['name']}: {dep['description']}")
-                response = input("Install? (y/n): ").lower().strip()
+                response = input("Install? (y/n/p for provide path): ").lower().strip()
                 if response == 'y':
                     self.install_dependency(dep_key, auto_confirm=True)
+                elif response == 'p':
+                    self._configure_custom_path(dep_key)
         
         # Download whisper models if whisper.cpp is installed
         if results['whisper.cpp']['installed']:
@@ -303,6 +323,88 @@ class DependencyManager:
                 except Exception as e:
                     print(f"✗ Download failed: {e}")
                     print(f"Please download manually from: {download_url}")
+    
+    def _configure_custom_path(self, dep_key: str):
+        """Configure custom path for a dependency"""
+        import yaml
+        
+        dep = self.DEPENDENCIES.get(dep_key)
+        if not dep:
+            return
+        
+        print(f"\n{dep['name']} - Custom Path Configuration")
+        print("-" * 60)
+        
+        if dep_key == 'whisper.cpp':
+            print("\nPlease provide the path to whisper.cpp executable.")
+            print("Examples:")
+            print("  macOS/Linux: /usr/local/bin/whisper")
+            print("  macOS/Linux: ~/whisper.cpp/main")
+            print("  Windows: C:\\whisper.cpp\\main.exe")
+        
+        path = input("\nEnter full path to executable: ").strip()
+        
+        # Validate path
+        if not os.path.exists(path):
+            print(f"✗ Path does not exist: {path}")
+            retry = input("Try again? (y/n): ").lower().strip()
+            if retry == 'y':
+                return self._configure_custom_path(dep_key)
+            return
+        
+        # Test the executable
+        try:
+            result = subprocess.run(
+                [path, '--help'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode != 0:
+                print(f"✗ Executable test failed")
+                return
+        except Exception as e:
+            print(f"✗ Failed to test executable: {e}")
+            return
+        
+        print(f"✓ Path verified: {path}")
+        
+        # Update config file
+        config_path = Path("config/config.yaml")
+        if not config_path.exists():
+            print("✗ Config file not found")
+            return
+        
+        try:
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f) or {}
+            
+            if dep_key == 'whisper.cpp':
+                if 'modules' not in config:
+                    config['modules'] = {}
+                if 'subtitles' not in config['modules']:
+                    config['modules']['subtitles'] = {}
+                if 'whispercpp' not in config['modules']['subtitles']:
+                    config['modules']['subtitles']['whispercpp'] = {}
+                
+                config['modules']['subtitles']['whispercpp']['custom_path'] = path
+                config['modules']['subtitles']['whispercpp']['whisper_bin'] = path
+            
+            with open(config_path, 'w') as f:
+                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+            
+            print(f"✓ Configuration saved to {config_path}")
+            print(f"\nCustom path configured: {path}")
+            
+        except Exception as e:
+            print(f"✗ Failed to update config: {e}")
+            print(f"\nPlease manually add to config/config.yaml:")
+            if dep_key == 'whisper.cpp':
+                print(f"  modules:")
+                print(f"    subtitles:")
+                print(f"      whispercpp:")
+                print(f"        custom_path: \"{path}\"")
+                print(f"        whisper_bin: \"{path}\"")
 
 
 def main():

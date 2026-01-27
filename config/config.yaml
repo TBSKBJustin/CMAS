@@ -53,7 +53,8 @@ modules:
     engine: "whispercpp"  # whispercpp or whisperx
     whispercpp:
       model_path: "models/ggml-base.bin"
-      whisper_bin: "whisper"
+      whisper_bin: "whisper"  # Or specify full path: "/path/to/whisper.cpp/main"
+      custom_path: ""  # Optional: custom path to whisper.cpp executable
     whisperx:
       model_name: "base"
       device: "cpu"

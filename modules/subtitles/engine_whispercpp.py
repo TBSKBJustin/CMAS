@@ -5,6 +5,8 @@ Updated to be the default subtitle generation engine
 
 import subprocess
 import logging
+import yaml
+import os
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -20,7 +22,7 @@ class WhisperCppEngine:
         'large': 'ggml-large-v3.bin'
     }
     
-    def __init__(self, model: str = "base", models_dir: str = "models", whisper_bin: str = "whisper"):
+    def __init__(self, model: str = "base", models_dir: str = "models", whisper_bin: str = "whisper", config_path: str = "config/config.yaml"):
         """
         Initialize whisper.cpp engine
         
@@ -28,11 +30,15 @@ class WhisperCppEngine:
             model: Model size (tiny, base, small, medium, large)
             models_dir: Directory containing GGML models
             whisper_bin: Path to whisper.cpp executable
+            config_path: Path to configuration file
         """
         self.model_name = model
         self.models_dir = Path(models_dir)
-        self.whisper_bin = whisper_bin
         self.logger = self._setup_logger()
+        
+        # Load custom path from config if available
+        custom_path = self._load_custom_path(config_path)
+        self.whisper_bin = custom_path if custom_path else whisper_bin
         
         # Get model file path
         model_file = self.SUPPORTED_MODELS.get(model, self.SUPPORTED_MODELS['base'])
@@ -46,18 +52,38 @@ class WhisperCppEngine:
         logger.setLevel(logging.INFO)
         return logger
     
+    def _load_custom_path(self, config_path: str) -> Optional[str]:
+        """Load custom whisper.cpp path from config"""
+        try:
+            if not os.path.exists(config_path):
+                return None
+            
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+            
+            custom_path = config.get('modules', {}).get('subtitles', {}).get('whispercpp', {}).get('custom_path')
+            
+            if custom_path and os.path.exists(custom_path):
+                self.logger.info(f"Using custom whisper.cpp path: {custom_path}")
+                return custom_path
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to load custom path from config: {e}")
+        
+        return None
+    
     def _check_availability(self) -> bool:
         """Check if whisper.cpp is installed"""
         try:
             result = subprocess.run(
                 [self.whisper_bin, '--help'],
-                capture_output=True,,
-        translate_to_english: bool = False
-    ) -> tuple[bool, Optional[str], Dict[str, str]]:
-        """
-        Generate subtitles from video
-        
-        Args:
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
             video_path: Path to input video file
             output_dir: Directory to save subtitle files
             language: Language code (e.g., "en", "zh", "auto")
