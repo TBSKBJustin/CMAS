@@ -239,7 +239,13 @@ class WorkflowController:
             language = event_config.get("language", "auto")
             model = event_config.get("whisper_model", "base")
             
+            # Get subtitle settings
+            subtitle_settings = event_config.get("subtitle_settings", {})
+            max_length = subtitle_settings.get("max_length", 0)
+            split_on_word = subtitle_settings.get("split_on_word", False)
+            
             self.logger.info(f"Using Whisper model: {model}, Language: {language}")
+            self.logger.info(f"Subtitle settings: max_length={max_length}, split_on_word={split_on_word}")
             
             # Initialize engine with selected model
             engine = WhisperCppEngine(model=model)
@@ -257,7 +263,9 @@ class WorkflowController:
                 video_path=video_path,
                 output_dir=str(output_dir),
                 language=language,
-                formats=["srt", "vtt"]
+                formats=["srt", "vtt"],
+                max_length=max_length,
+                split_on_word=split_on_word
             )
             
             if success:

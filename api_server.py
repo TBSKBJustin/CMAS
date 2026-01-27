@@ -45,6 +45,8 @@ class EventCreate(BaseModel):
     scripture: Optional[str] = None
     language: str = "auto"
     whisper_model: str = "base"
+    subtitle_max_length: int = 84
+    subtitle_split_on_word: bool = True
     modules: Optional[Dict[str, Any]] = None
 
 
@@ -109,6 +111,8 @@ async def create_event(event_data: EventCreate):
             speaker=event_data.speaker,
             series=event_data.series,
             scripture=event_data.scripture,
+            subtitle_max_length=event_data.subtitle_max_length,
+            subtitle_split_on_word=event_data.subtitle_split_on_word,
             language=event_data.language,
             whisper_model=event_data.whisper_model,
             modules=event_data.modules

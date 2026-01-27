@@ -127,7 +127,9 @@ class WhisperCppEngine:
         output_dir: str,
         language: str = "auto",
         formats: Optional[List[str]] = None,
-        translate_to_english: bool = False
+        translate_to_english: bool = False,
+        max_length: int = 0,
+        split_on_word: bool = False
     ) -> tuple[bool, Optional[str], Dict[str, str]]:
         """
         Generate subtitles from video file
@@ -138,6 +140,8 @@ class WhisperCppEngine:
             language: Language code (e.g., "en", "zh", "auto")
             formats: List of output formats (e.g., ["srt", "vtt"])
             translate_to_english: Translate to English
+            max_length: Maximum segment length in characters (0 = no limit)
+            split_on_word: Split on word boundaries rather than tokens
             
         Returns:
             (success, error_message, output_files)
@@ -153,7 +157,8 @@ class WhisperCppEngine:
         
         # Try direct transcription first
         success, error, output = self._transcribe(
-            video_path, output_dir, language, formats, translate_to_english
+            video_path, output_dir, language, formats, translate_to_english,
+            max_length, split_on_word
         )
         
         if success:
@@ -168,7 +173,8 @@ class WhisperCppEngine:
             return False, "Failed to extract audio", {}
         
         success, error, output = self._transcribe(
-            audio_path, output_dir, language, formats, translate_to_english
+            audio_path, output_dir, language, formats, translate_to_english,
+            max_length, split_on_word
         )
         
         return success, error, output
@@ -179,7 +185,9 @@ class WhisperCppEngine:
         output_dir: str,
         language: str,
         formats: List[str],
-        translate: bool
+        translate: bool,
+        max_length: int = 0,
+        split_on_word: bool = False
     ) -> tuple[bool, Optional[str], Dict[str, str]]:
         """Transcribe audio/video file"""
         try:
@@ -204,6 +212,13 @@ class WhisperCppEngine:
             # Translation
             if translate:
                 cmd.append("-tr")
+            
+            # Subtitle segmentation settings
+            if max_length > 0:
+                cmd.extend(["--max-len", str(max_length)])
+            
+            if split_on_word:
+                cmd.append("-sow")
             
             # Output formats
             format_flags = {

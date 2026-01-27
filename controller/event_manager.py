@@ -26,6 +26,8 @@ class EventManager:
         scripture: Optional[str] = None,
         language: str = "auto",
         whisper_model: str = "base",
+        subtitle_max_length: int = 84,
+        subtitle_split_on_word: bool = True,
         modules: Optional[Dict[str, bool]] = None
     ) -> str:
         """
@@ -40,6 +42,8 @@ class EventManager:
             scripture: Scripture reference (optional)
             language: Language code (default: auto)
             whisper_model: Whisper model size (default: base)
+            subtitle_max_length: Max characters per subtitle line
+            subtitle_split_on_word: Split on word boundaries
             modules: Module toggle configuration (optional)
             
         Returns:
@@ -73,6 +77,10 @@ class EventManager:
             "event_id": event_id,
             "title": title,
             "series": series,
+            "subtitle_settings": {
+                "max_length": subtitle_max_length,
+                "split_on_word": subtitle_split_on_word
+            },
             "scripture": scripture,
             "speaker": speaker,
             "language": language,

@@ -12,6 +12,8 @@ export default function EventCreate() {
     scripture: '',
     language: 'auto',
     whisper_model: 'base',
+    subtitle_max_length: 84,
+    subtitle_split_on_word: true,
     modules: {
       thumbnail_ai: true,
       thumbnail_compose: true,
@@ -161,6 +163,51 @@ export default function EventCreate() {
               <p className="text-xs text-gray-500 mt-1">
                 Larger models are more accurate but slower
               </p>
+            </div>
+          </div>
+          
+          <div className="border-t pt-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Subtitle Settings</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max Characters per Line
+                </label>
+                <input
+                  type="number"
+                  name="subtitle_max_length"
+                  value={formData.subtitle_max_length}
+                  onChange={handleChange}
+                  min="40"
+                  max="200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Recommended: 60-84 characters
+                </p>
+              </div>
+              
+              <div className="flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="subtitle_split_on_word"
+                    checked={formData.subtitle_split_on_word}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      subtitle_split_on_word: e.target.checked
+                    }))}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Split on Word Boundaries</span>
+                    <p className="text-xs text-gray-500">
+                      Avoid breaking words mid-sentence
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
         </div>
