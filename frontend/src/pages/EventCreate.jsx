@@ -11,6 +11,7 @@ export default function EventCreate() {
     series: '',
     scripture: '',
     language: 'auto',
+    whisper_model: 'base',
     modules: {
       thumbnail_ai: true,
       thumbnail_compose: true,
@@ -112,6 +113,54 @@ export default function EventCreate() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., John 3:16"
               />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Language
+              </label>
+              <select
+                name="language"
+                value={formData.language}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="auto">Auto Detect</option>
+                <option value="en">English</option>
+                <option value="zh">中文 (Chinese)</option>
+                <option value="es">Español (Spanish)</option>
+                <option value="fr">Français (French)</option>
+                <option value="de">Deutsch (German)</option>
+                <option value="ja">日本語 (Japanese)</option>
+                <option value="ko">한국어 (Korean)</option>
+                <option value="pt">Português (Portuguese)</option>
+                <option value="ru">Русский (Russian)</option>
+                <option value="ar">العربية (Arabic)</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Whisper Model
+              </label>
+              <select
+                name="whisper_model"
+                value={formData.whisper_model}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="tiny">Tiny (Fast, Lower Quality)</option>
+                <option value="base">Base (Recommended)</option>
+                <option value="small">Small (Better Quality)</option>
+                <option value="medium">Medium (High Quality, Slower)</option>
+                <option value="large-v3">Large V3 (Best Quality, Very Slow)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Larger models are more accurate but slower
+              </p>
             </div>
           </div>
         </div>

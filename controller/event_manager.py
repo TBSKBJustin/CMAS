@@ -25,6 +25,7 @@ class EventManager:
         series: Optional[str] = None,
         scripture: Optional[str] = None,
         language: str = "auto",
+        whisper_model: str = "base",
         modules: Optional[Dict[str, bool]] = None
     ) -> str:
         """
@@ -38,6 +39,7 @@ class EventManager:
             series: Sermon series name (optional)
             scripture: Scripture reference (optional)
             language: Language code (default: auto)
+            whisper_model: Whisper model size (default: base)
             modules: Module toggle configuration (optional)
             
         Returns:
@@ -74,6 +76,7 @@ class EventManager:
             "scripture": scripture,
             "speaker": speaker,
             "language": language,
+            "whisper_model": whisper_model,
             "date": date,
             "time": time,
             "created_at": datetime.now().isoformat(),

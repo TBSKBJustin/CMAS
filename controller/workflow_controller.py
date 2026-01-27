@@ -235,11 +235,22 @@ class WorkflowController:
             output_dir = event_dir / "output"
             output_dir.mkdir(parents=True, exist_ok=True)
             
-            # Get language from event config
+            # Get language and model from event config
             language = event_config.get("language", "auto")
+            model = event_config.get("whisper_model", "base")
             
-            # Initialize engine
-            engine = WhisperCppEngine(model="base")
+            self.logger.info(f"Using Whisper model: {model}, Language: {language}")
+            
+            # Initialize engine with selected model
+            engine = WhisperCppEngine(model=model)
+            
+            # Check if model exists
+            if not engine.check_model():
+                return {
+                    "status": "failed",
+                    "error": f"Model '{model}' not found. Please download it first.",
+                    "timestamp": self._get_timestamp()
+                }
             
             # Generate subtitles
             success, error, output_files = engine.generate_subtitles(
@@ -254,6 +265,8 @@ class WorkflowController:
                 return {
                     "status": "success",
                     "message": "Subtitles generated successfully",
+                    "model": model,
+                    "language": language,
                     "output_files": output_files,
                     "timestamp": self._get_timestamp()
                 }

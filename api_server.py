@@ -44,6 +44,7 @@ class EventCreate(BaseModel):
     series: Optional[str] = None
     scripture: Optional[str] = None
     language: str = "auto"
+    whisper_model: str = "base"
     modules: Optional[Dict[str, Any]] = None
 
 
@@ -109,6 +110,7 @@ async def create_event(event_data: EventCreate):
             series=event_data.series,
             scripture=event_data.scripture,
             language=event_data.language,
+            whisper_model=event_data.whisper_model,
             modules=event_data.modules
         )
         
