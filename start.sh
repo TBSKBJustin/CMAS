@@ -20,8 +20,8 @@ echo "📋 Checking dependencies..."
 python utils/dependency_manager.py check --quiet
 
 # Start API server in background
-echo "🔧 Starting API server on port 5000..."
-uvicorn api_server:app --host 0.0.0.0 --port 5000 &
+echo "🔧 Starting API server on port 5001..."
+uvicorn api_server:app --host 0.0.0.0 --port 5001 &
 API_PID=$!
 
 # Wait for API to be ready
@@ -36,7 +36,7 @@ FRONTEND_PID=$!
 echo ""
 echo "✅ System started!"
 echo "📱 Web interface: http://localhost:3000"
-echo "🔌 API server: http://localhost:5000"
+echo "🔌 API server: http://localhost:5001"
 echo ""
 echo "Press Ctrl+C to stop all services"
 

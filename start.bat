@@ -20,8 +20,8 @@ echo Checking dependencies...
 python utils\dependency_manager.py check
 
 REM Start API server
-echo Starting API server on port 5000...
-start /B uvicorn api_server:app --host 0.0.0.0 --port 5000
+echo Starting API server on port 5001...
+start /B uvicorn api_server:app --host 0.0.0.0 --port 5001
 
 REM Wait a moment
 timeout /t 2 /nobreak
@@ -34,7 +34,7 @@ start /B npm run dev
 echo.
 echo System started!
 echo Web interface: http://localhost:3000
-echo API server: http://localhost:5000
+echo API server: http://localhost:5001
 echo.
 echo Press Ctrl+C to stop services
 pause

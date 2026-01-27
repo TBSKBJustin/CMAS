@@ -77,7 +77,7 @@ Open http://localhost:3000 in your browser!
 └──────────────┬──────────────────────┘
                │ REST API
 ┌──────────────▼──────────────────────┐
-│   FastAPI Server (Port 5000)        │
+│   FastAPI Server (Port 5001)        │
 │  - /api/events                      │
 │  - /api/dependencies                │
 │  - /api/status                      │

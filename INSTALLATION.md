@@ -144,7 +144,7 @@ source venv/bin/activate  # If not already activated
 python api_server.py
 ```
 
-The API will be available at http://localhost:5000
+The API will be available at http://localhost:5001
 
 ### Terminal 2: Start Frontend
 ```bash
@@ -163,11 +163,11 @@ The web interface will be available at http://localhost:3000
 ## Troubleshooting
 
 ### Port already in use
-If port 5000 or 3000 is already in use:
+If port 5001 or 3000 is already in use:
 
 **API Server:**
 ```bash
-python api_server.py --port 5001
+python api_server.py --port 5002
 ```
 
 **Frontend:**

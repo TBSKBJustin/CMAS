@@ -61,7 +61,7 @@ frontend/
 
 ## API Integration
 
-The frontend communicates with the FastAPI server (default: http://localhost:5000) via REST endpoints:
+The frontend communicates with the FastAPI server (default: http://localhost:5001) via REST endpoints:
 
 - `GET /api/events` - List all events
 - `POST /api/events` - Create new event

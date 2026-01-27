@@ -50,8 +50,8 @@ export default function Dashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">System Status</h3>
         <div className="space-y-3">
-          {status?.dependencies?.map((dep) => (
-            <DependencyStatus key={dep.name} {...dep} />
+          {status?.dependencies && Object.entries(status.dependencies).map(([key, dep]) => (
+            <DependencyStatus key={key} {...dep} />
           ))}
         </div>
       </div>
