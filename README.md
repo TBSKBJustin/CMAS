@@ -1,402 +1,204 @@
 # ⛪ Church Media Automation System
 
-A modular, “LEGO-style” media workflow designed for churches to streamline weekly production:
+A modular, “LEGO-style” media workflow for churches: recording/streaming → thumbnail → subtitles → publishing.
 
-🎥 recording/streaming → 🖼 thumbnail creation → 🗣 captions/subtitles → ☁️ YouTube publishing → 🌍 website posts
+This project is pipeline-first and replaceable-by-design: swap modules (subtitle engine, AI models, publishers) without rewriting the system.
 
-This project is **pipeline-first** and **replaceable-by-design**: you can swap out any module (e.g., different subtitle engines, different AI models) without rewriting the whole system.
+## Quick Start
 
-## 🚀 Quick Start
+1. Install dependencies (guided):
 
 ```bash
-# 1. Setup dependencies (interactive)
 python utils/dependency_manager.py setup
+```
 
-# 2. Start the API server
+2. Start the API server:
+
+```bash
 python api_server.py
+```
 
-# 3. Start the frontend (in another terminal)
+3. Start the frontend (separate terminal):
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Access the web interface at http://localhost:3000
+Open the web UI at http://localhost:3000
 
 ---
 
-## Why this exists
+**Core concepts**
 
-Church media work often looks like this:
-
-* There may be **multiple services in one day** (morning service, youth, Bible study, special events).
-* Some gatherings **require livestreaming**, others don’t.
-* Some events have **different workflows** (YouTube only, website only, captions only).
-* Teams need **reliable automation**, but also **manual control** when needed.
-
-This system is built for that reality:
-
-* **Event-based runs** (each gathering is an “event” with its own settings)
-* **Module toggles** per event (enable/disable thumbnail, subtitles, upload, website, etc.)
-* **Multiple ingestion methods** (auto-detect recordings OR manually select a video to process)
-
----
-
-## Key features
-
-* **Web-based UI** - Modern React frontend for easy management
-* **Smart dependency detection** - Automatically checks for and helps install required tools
-* **Event-based workflows** - Supports multiple gatherings per day
-* **Module toggles** per event - Turn modules on/off without code changes
-* **Multiple ingestion modes**
-  * **OBS Monitor**: automatically detects new recordings
-  * **Manual input**: pick a file and run the pipeline
-* **Plugin architecture** - Swap implementations (e.g., different subtitle engines)
-* **Robust defaults + fallbacks**
-  * If thumbnail AI fails → use a default character asset
-  * If "direct video to subtitle engine" fails → fallback to audio extraction
-* **Trackable outputs** - Everything goes into an event folder with logs and metadata
+- Events: each run is an event (metadata + module toggles + inputs/outputs)
+- Modules: small, single-purpose plugins (subtitles, thumbnails, uploads)
+- Files + JSON: modules exchange data via standard JSON inputs and file-based outputs
 
 ---
 
 ## System Requirements
 
-### Required
-- **Python 3.8+**
-- **FFmpeg** - For video/audio processing
-- **Node.js 18+** - For React frontend
+Required:
+- Python 3.8+
+- FFmpeg
+- Node.js 18+
 
-### Optional (Install as needed)
-- **whisper.cpp** - Fast subtitle generation (recommended)
-- **Ollama** - Local AI for character generation
-- **OBS Studio** - Recording/streaming software
+Optional (enhanced features):
+- whisper.cpp (local ASR models)
+- Ollama (local LLM for subtitle correction / summaries / image prompts)
+- OBS Studio (if using OBS monitor ingestion)
 
-The system will detect which tools you have and guide you through installing missing ones.
-
----
-
-## Architecture overview
-
-### High level
-
-```
-               ┌────────────────────────┐
-               │   Workflow Controller  │
-               │  (orchestrator/queue)  │
-               └───────────┬────────────┘
-                           │
-           ┌───────────────┼────────────────┐
-           ▼               ▼                ▼
-     Ingestion         Media Build       Publishing
- (OBS monitor/manual) (thumb/subtitles) (YouTube/site/etc.)
-```
-
-### Core idea: modules talk via files + JSON
-
-Each module:
-
-* takes a **standard JSON input** (config + paths)
-* produces **standard outputs** (files + JSON results)
-* does **one job only**
-
-This keeps the system “swap-friendly.”
+The project auto-detects missing dependencies and helps guide installation.
 
 ---
 
-## Workflow model: Events
+## Project layout (high level)
 
-Every run is tied to an **Event**.
+See the repository root for details; main folders:
 
-Examples:
+- `frontend/` — React app and UI
+- `controller/` — workflow orchestrator and event manager
+- `modules/` — plugin implementations (subtitles, thumbnail, publish, ingest)
+- `utils/` — dependency manager and helpers
+- `events/` — generated event folders (input/output/logs)
+- `config/` — YAML configuration
 
-* `2026-01-26_0900_sunday-service`
-* `2026-01-26_1300_youth`
-* `2026-01-26_1900_bible-study`
-
-An event has:
-
-* metadata (title, speaker, scripture, date/time, etc.)
-* module toggles (which steps run)
-* input media (one or more video files)
-* outputs (thumbnail, subtitles, markdown, upload URLs, logs)
+Key files: `api_server.py`, `controller/workflow_controller.py`, `modules/subtitles/engine_whispercpp.py`, `modules/content/ai_processor.py`.
 
 ---
 
-## Module toggles (per event)
+## Typical user flow
 
-Churches frequently need different outputs for different gatherings.
-This system supports toggling modules per event:
-
-* `live_control` (optional): control OBS start/stop/scene switching
-* `ingest_obs_monitor` (optional): watch a folder for new recordings
-* `thumbnail_ai` (optional): generate the right-side character image
-* `thumbnail_compose` (optional): compose final thumbnail from layers
-* `subtitles` (optional): generate SRT/VTT
-* `publish_youtube` (optional): upload video + thumbnail + captions
-* `publish_website` (optional): generate markdown + git push
-* `archive` (optional): move outputs to long-term storage / NAS
-
-You can:
-
-* disable subtitles for quick uploads
-* disable YouTube for events that are “in-person only”
-* disable website posts for internal meetings
-* run *only subtitles* on a previously uploaded video
-
----
-
-## Ingestion modes
-
-### 1) OBS Monitor (automatic)
-
-A folder watcher detects when a new recording appears (e.g., `.mkv` or `.mp4`) and triggers a new event run (or attaches the file to a selected event).
-
-Best for:
-
-* regular Sunday services where recording ends predictably
-* consistent “recording folder” setup
-
-### 2) Manual selection (recommended for multi-service days)
-
-You can manually select a recording to process and choose which event it belongs to.
-
-Best for:
-
-* multiple gatherings in one day
-* events that don’t always follow the same recording pattern
-* re-processing older videos (e.g., re-run captions with a new engine)
-
----
-
-## Recommended user flow
-
-### A) For a typical Sunday service
-
-1. Create an event (title/speaker/scripture)
-2. Enable modules: `thumbnail`, `subtitles`, `youtube`, `website`
-3. Let OBS monitor detect the recording OR manually select it
-4. Click: **Run Workflow**
-5. Review outputs → optionally publish
-
-### B) For a youth gathering that doesn’t need livestream or website
-
-1. Create event
-2. Enable only: `subtitles` + `youtube` (or only `subtitles`)
-3. Manually select the video
+1. Create an event (title, speaker, time)
+2. Enable required modules (subtitles, thumbnail, publish)
+3. Add or auto-detect video input (OBS monitor or manual)
 4. Run workflow
-
-### C) Re-run with a better AI model later
-
-1. Select existing event
-2. Disable everything except `thumbnail_ai` + `thumbnail_compose`
-3. Run again → it updates the thumbnail output
+5. Review outputs and publish
 
 ---
 
-## Project structure
+## Subtitles: fixes & best practices
 
-```
-church-media-automation/
-│
-├── frontend/                      # React web interface
-│   ├── src/
-│   │   ├── components/           # UI components
-│   │   ├── pages/                # Page views
-│   │   └── api.js                # API client
-│   ├── package.json
-│   └── vite.config.js
-│
-├── controller/
-│   ├── workflow_controller.py    # orchestrates modules, queue, retries
-│   ├── event_manager.py          # create/load/update events
-│   └── state_store.py            # saves run state (json)
-│
-├── modules/
-│   ├── ingest/
-│   │   ├── obs_monitor.py        # watches recording folder
-│   │   └── manual_ingest.py      # validate + attach selected file
-│   │
-│   ├── live/
-│   │   └── obs_control.py        # optional: obs-websocket control
-│   │
-│   ├── thumbnail/
-│   │   ├── ai_generator_ollama.py # character image generator
-│   │   └── composer_pillow.py    # compose final thumbnail
-│   │
-│   ├── subtitles/
-│   │   ├── engine_whispercpp.py  # whisper.cpp engine (default)
-│   │   └── engine_whisperx.py    # alternative engine (optional)
-│   │
-│   ├── publish/
-│   │   ├── youtube_uploader.py   # upload video/thumb/captions
-│   │   └── website_publisher.py  # generate markdown + git push
-│   │
-│   └── archive/
-│       └── archiver.py           # optional storage move/cleanup
-│
-├── utils/
-│   └── dependency_manager.py     # check and install system dependencies
-│
-├── assets/
-│   ├── backgrounds/              # thumbnail backgrounds
-│   ├── logos/                    # church logo
-│   ├── pastor/                   # pastor portraits
-│   └── fonts/                    # typography fonts
-│
-├── events/                       # event data (auto-generated)
-├── config/                       # configuration files
-├── models/                       # whisper models (auto-downloaded)
-│
-├── api_server.py                 # FastAPI server
-├── start.sh / start.bat          # Startup scripts
-├── requirements.txt              # Python dependencies
-├── INSTALLATION.md               # Detailed installation guide
-└── README.md
-```
+This project uses `whisper.cpp` by default (fast local ASR). Recent fixes and recommendations:
 
----
+1) Model path handling
+- Model paths are resolved to absolute paths to avoid relative-path failures when the API server runs from a different cwd.
 
-## Event configuration example
+2) File name sanitization
+- Filenames with spaces are normalized (spaces → underscores) before calling CLI tools to avoid shell parsing issues.
 
-`events/2026-01-26_0900_sunday-service/event.json`
+3) Fallback behavior
+- The subtitle engine will try direct video input, then fall back to audio extraction if needed.
 
-```json
-{
-  "event_id": "2026-01-26_0900_sunday-service",
-  "title": "Miracles and Wonders",
-  "series": "Acts",
-  "scripture": "15:12",
-  "speaker": "Pastor Name",
-  "language": "auto",
-  "inputs": {
-    "video_files": [
-      "events/2026-01-26_0900_sunday-service/input/recording.mp4"
-    ]
-  },
-  "modules": {
-    "live_control": false,
-    "ingest_obs_monitor": true,
-    "thumbnail_ai": true,
-    "thumbnail_compose": true,
-    "subtitles": true,
-    "publish_youtube": true,
-    "publish_website": true,
-    "archive": false
-  }
-}
-```
-
-**Note:** This is the heart of “module toggles.”
-The controller reads this and only runs enabled modules.
-
----
-
-## Thumbnail composition (template-based)
-
-The thumbnail is built from layers:
-
-1. background template (fixed)
-2. title text + stroke/shadow
-3. scripture reference text
-4. AI-generated character (changes weekly)
-5. pastor portrait (pre-made, fixed)
-6. church logo (fixed)
-7. corner label / badge (fixed)
-
-Outputs:
-
-* `thumbnail.jpg` (1280×720)
-
-This keeps visual consistency while letting weekly content vary.
-
----
-
-## Subtitles strategy (practical)
-
-For many church videos, forced word-level alignment (e.g., WhisperX alignment) isn’t needed.
-This system supports engines as plugins:
-
-* `engine_whispercpp` (fast, simple deployment)
-* `engine_whisperx` (optional if you later want word-level timestamps / diarization)
-
-Recommended default:
-
-* Generate `.srt` for upload
-* Also generate `.vtt` if your website player benefits from it
-
-Fallback behavior (recommended):
-
-* Try direct video input
-* If it fails, extract audio and retry automatically
-
----
-
-## Execution modes
-
-### CLI (first target)
-
-* Create event
-* Attach video (monitor or manual)
-* Run controller
-
-Example (conceptual):
+How to verify:
 
 ```bash
-python controller/workflow_controller.py run --event 2026-01-26_0900_sunday-service
+# check whisper-cli and model
+/path/to/whisper-cli -m /absolute/path/to/ggml-base.bin --help
+
+# look for generated subtitles
+ls -lh events/NEW_EVENT_ID/output/*.srt
 ```
 
-### Web UI (planned / optional)
+---
 
-A simple control panel to:
+## Subtitle segmentation (controls)
 
-* create/select event
-* upload or pick video file
-* toggle modules
-* run workflow
-* view outputs and logs
-* publish when ready
+New subtitle settings are exposed in the Event Create UI:
+
+- `Max Characters per Line` (recommended defaults: 60–84 for English, 40–60 for Chinese)
+- `Split on Word Boundaries` (avoid splitting words mid-token)
+
+Practical recommendations:
+
+- YouTube / desktop: 60–84 chars
+- Mobile: 40–60 chars
+- Technical content: 60–70 chars
+
+CLI / whisper options supported:
+
+- `--max-len N` — max characters per subtitle segment
+- `-sow` / `--split-on-word` — split on word boundaries
+
+Adjust settings per-event and re-run the workflow to test results.
 
 ---
 
-## Failure handling & re-runs
+## Language & model selection
 
-This system is designed for real church conditions:
+Event creation UI lets you choose:
 
-* last-minute edits
-* re-uploads
-* “captions need to be regenerated”
-* thumbnail style changes
+- Language (Auto / en / zh / es / fr / de / ja / ko / pt / ru / ar / hi ...)
+- Whisper model (tiny / base / small / medium / large-v3)
 
-Each module run produces:
+Trade-offs:
 
-* logs
-* outputs
-* a module result JSON
+- Tiny: fastest, lowest quality
+- Base: recommended for everyday use
+- Small/Medium: higher quality, slower
+- Large-v3: highest quality, slowest and largest download
 
-Re-running the same event can:
-
-* only re-run the modules you enable
-* skip modules that already succeeded (unless “force” is set)
+If a model is not available locally, the system can prompt you to download it (or use `../whisper.cpp/download-ggml-model.sh`).
 
 ---
 
-## Replaceability roadmap
+## whisper.cpp connection checks
 
-Examples of future swaps:
+Quick checks and troubleshooting:
 
-* Ollama → Stable Diffusion / OpenAI Images / ComfyUI server
-* whisper.cpp → WhisperX / faster-whisper / cloud ASR
-* YouTube → Vimeo / Facebook / other platforms
-* Pillow composer → Figma API / Photoshop automation
+- Ensure `whisper-cli` binary is executable and configured in `config/config.yaml` under `modules.subtitles.whispercpp.whisper_bin`.
+- Copy required `.bin` model files into `models/` or set `modules.subtitles.whispercpp.model_path` to an absolute path.
+- Verify ffmpeg is installed and in `$PATH`.
 
-If the module input/output contract stays consistent, swaps are painless.
+Run the included test:
+
+```bash
+python test_whisper_connection.py
+```
+
+Expected outputs: `CST-xxx_Final.srt` or similar in `events/NEW_EVENT_ID/output/` and log lines showing model path and whisper-cli invocation.
+
 ---
 
-## Getting Started
+## AI content (Ollama) — subtitle correction & summaries
 
-1. **Installation:** See [INSTALLATION.md](INSTALLATION.md) for detailed setup instructions
-2. **Quick Start:** See [QUICKSTART.md](QUICKSTART.md) for usage examples  
-3. **Dependencies:** Run `python utils/dependency_manager.py setup` for guided installation
+If Ollama is available at `http://localhost:11434`, the system can:
+
+- Post-process generated `.srt` to correct punctuation, timing edge-cases, and formatting
+- Produce a short summary of the sermon / talk as a `.txt` alongside the corrected `.srt`
+
+These features are optional and controlled per-event via `ai_content` module settings.
+
+---
+
+## Developer notes
+
+- Modules follow a simple contract: JSON input → produce files + result JSON
+- Use `controller/workflow_controller.py` to trace runs and inspect logs
+- Frontend calls the API endpoints to list available Whisper and Ollama models; the UI populates selects dynamically
+
+---
+
+## Troubleshooting checklist
+
+- Server logs: the API server prints processing steps and applied subtitle settings
+- Filenames: ensure input video filenames are accessible and do not contain problematic characters (spaces are normalized by the system)
+- Models: verify `models/` contains required `.bin` files
+- FFmpeg: run `ffmpeg -version` to confirm installation
+
+---
+
+## Where to get help
+
+File issues in the repo, or inspect `events/` logs for detailed errors. If you want, I can run tests or merge additional documentation sections.
+
+---
+
+## A note about documentation consolidation
+
+This README now contains consolidated guidance (installation, quick start, subtitle tips, model selection, and connection checks). Redundant top-level docs have been removed from the repository to reduce duplication.
 
 ---
 

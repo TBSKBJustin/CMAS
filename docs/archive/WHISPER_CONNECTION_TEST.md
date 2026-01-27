@@ -1,3 +1,4 @@
+````markdown
 # CMAS与whisper.cpp连接测试报告
 
 **测试日期**: 2026年1月26日  
@@ -133,3 +134,5 @@ CMAS/models/ggml-base.bin
 ---
 
 *如需切换到不同的模型，只需修改 `config/config.yaml` 中的 `model_path` 配置即可。*
+
+````

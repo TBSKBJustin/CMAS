@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
-import { createEvent } from '../api'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { createEvent, getWhisperModels, getOllamaModels } from '../api'
 
 export default function EventCreate() {
   const navigate = useNavigate()
@@ -14,14 +14,43 @@ export default function EventCreate() {
     whisper_model: 'base',
     subtitle_max_length: 84,
     subtitle_split_on_word: true,
+    ai_model: 'qwen2.5:latest',
+    ai_correct_subtitles: true,
+    ai_generate_summary: true,
+    ai_summary_length: 'medium',
     modules: {
       thumbnail_ai: true,
       thumbnail_compose: true,
       subtitles: true,
+      ai_content: true,
       publish_youtube: false,
       publish_website: false,
     }
   })
+  
+  // Fetch available models
+  const { data: whisperModelsData } = useQuery({
+    queryKey: ['whisperModels'],
+    queryFn: getWhisperModels
+  })
+  
+  const { data: ollamaModelsData } = useQuery({
+    queryKey: ['ollamaModels'],
+    queryFn: getOllamaModels
+  })
+  
+  // Set default models when data loads
+  useEffect(() => {
+    if (whisperModelsData?.default && !formData.whisper_model) {
+      setFormData(prev => ({ ...prev, whisper_model: whisperModelsData.default }))
+    }
+  }, [whisperModelsData])
+  
+  useEffect(() => {
+    if (ollamaModelsData?.default && formData.ai_model === 'qwen2.5:latest') {
+      setFormData(prev => ({ ...prev, ai_model: ollamaModelsData.default }))
+    }
+  }, [ollamaModelsData])
   
   const createMutation = useMutation({
     mutationFn: createEvent,
@@ -153,15 +182,22 @@ export default function EventCreate() {
                 value={formData.whisper_model}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={!whisperModelsData?.models?.length}
               >
-                <option value="tiny">Tiny (Fast, Lower Quality)</option>
-                <option value="base">Base (Recommended)</option>
-                <option value="small">Small (Better Quality)</option>
-                <option value="medium">Medium (High Quality, Slower)</option>
-                <option value="large-v3">Large V3 (Best Quality, Very Slow)</option>
+                {whisperModelsData?.models?.length > 0 ? (
+                  whisperModelsData.models.map(model => (
+                    <option key={model.value} value={model.value}>
+                      {model.label}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No models found - please download models</option>
+                )}
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Larger models are more accurate but slower
+                {whisperModelsData?.models?.length > 0 
+                  ? `${whisperModelsData.models.length} model(s) available`
+                  : 'Download models to ../whisper.cpp/models/'}
               </p>
             </div>
           </div>
@@ -212,6 +248,105 @@ export default function EventCreate() {
           </div>
         </div>
         
+        <div className="bg-white rounded-lg shadow p-6 space-y-4">
+          <h3 className="text-lg font-semibold">AI Content Processing</h3>
+          <p className="text-sm text-gray-600">
+            Use Ollama to correct subtitles and generate content summaries
+          </p>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              AI Model
+            </label>
+            <select
+              name="ai_model"
+              value={formData.ai_model}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={!ollamaModelsData?.models?.length}
+            >
+              {ollamaModelsData?.models?.length > 0 ? (
+                ollamaModelsData.models.map(model => (
+                  <option key={model.value} value={model.value}>
+                    {model.label}
+                  </option>
+                ))
+              ) : (
+                <option value="">
+                  {ollamaModelsData?.service_available === false 
+                    ? 'Ollama not running - start with: ollama serve'
+                    : 'No models found - download with: ollama pull qwen2.5'}
+                </option>
+              )}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {ollamaModelsData?.service_available === true
+                ? `${ollamaModelsData.models.length} model(s) available`
+                : ollamaModelsData?.service_available === false
+                ? 'Ollama service not available'
+                : 'Checking Ollama...'}
+            </p>
+          </div>
+          
+          <div className="space-y-3 border-t pt-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="ai_correct_subtitles"
+                checked={formData.ai_correct_subtitles}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  ai_correct_subtitles: e.target.checked
+                }))}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">Correct Subtitles</span>
+                <p className="text-xs text-gray-500">
+                  Fix spelling errors and transcription mistakes
+                </p>
+              </div>
+            </label>
+            
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="ai_generate_summary"
+                checked={formData.ai_generate_summary}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  ai_generate_summary: e.target.checked
+                }))}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">Generate Summary</span>
+                <p className="text-xs text-gray-500">
+                  Create a content summary for thumbnails and posts
+                </p>
+              </div>
+            </label>
+            
+            {formData.ai_generate_summary && (
+              <div className="ml-7">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Summary Length
+                </label>
+                <select
+                  name="ai_summary_length"
+                  value={formData.ai_summary_length}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="short">Short (2-3 paragraphs)</option>
+                  <option value="medium">Medium (4-5 paragraphs)</option>
+                  <option value="long">Long (6-8 paragraphs)</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Workflow Modules</h3>
           <div className="space-y-3">
@@ -238,6 +373,12 @@ export default function EventCreate() {
               label="Publish to YouTube"
               checked={formData.modules.publish_youtube}
               onChange={() => handleModuleToggle('publish_youtube')}
+            />
+            <ModuleToggle
+              name="ai_content"
+              label="AI Content Processing"
+              checked={formData.modules.ai_content}
+              onChange={() => handleModuleToggle('ai_content')}
             />
             <ModuleToggle
               name="publish_website"

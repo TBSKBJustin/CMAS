@@ -55,4 +55,15 @@ export const getSystemStatus = async () => {
   return data
 }
 
+// Models
+export const getWhisperModels = async () => {
+  const { data } = await api.get('/models/whisper')
+  return data
+}
+
+export const getOllamaModels = async () => {
+  const { data } = await api.get('/models/ollama')
+  return data
+}
+
 export default api

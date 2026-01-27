@@ -28,6 +28,10 @@ class EventManager:
         whisper_model: str = "base",
         subtitle_max_length: int = 84,
         subtitle_split_on_word: bool = True,
+        ai_model: str = "qwen2.5:latest",
+        ai_correct_subtitles: bool = True,
+        ai_generate_summary: bool = True,
+        ai_summary_length: str = "medium",
         modules: Optional[Dict[str, bool]] = None
     ) -> str:
         """
@@ -44,6 +48,10 @@ class EventManager:
             whisper_model: Whisper model size (default: base)
             subtitle_max_length: Max characters per subtitle line
             subtitle_split_on_word: Split on word boundaries
+            ai_model: Ollama model for AI content processing
+            ai_correct_subtitles: Enable subtitle correction
+            ai_generate_summary: Enable summary generation
+            ai_summary_length: Summary length (short/medium/long)
             modules: Module toggle configuration (optional)
             
         Returns:
@@ -67,6 +75,7 @@ class EventManager:
                 "thumbnail_ai": True,
                 "thumbnail_compose": True,
                 "subtitles": True,
+                "ai_content": True,
                 "publish_youtube": True,
                 "publish_website": True,
                 "archive": False
@@ -80,6 +89,12 @@ class EventManager:
             "subtitle_settings": {
                 "max_length": subtitle_max_length,
                 "split_on_word": subtitle_split_on_word
+            },
+            "ai_content_settings": {
+                "model": ai_model,
+                "correct_subtitles": ai_correct_subtitles,
+                "generate_summary": ai_generate_summary,
+                "summary_length": ai_summary_length
             },
             "scripture": scripture,
             "speaker": speaker,

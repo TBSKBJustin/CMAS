@@ -1,3 +1,4 @@
+````markdown
 # ✂️ 字幕切割控制功能
 
 ## 问题描述
@@ -368,3 +369,5 @@ cat events/EVENT_ID/event.json | grep subtitle_settings
 ✅ **保持单词完整** - 专业的切割方式
 
 **立即试用**，创建一个新事件并体验改进后的字幕质量！
+
+````

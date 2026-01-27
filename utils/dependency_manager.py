@@ -40,7 +40,7 @@ class DependencyManager:
         },
         'ollama': {
             'name': 'Ollama',
-            'description': 'Local AI model runner (for character generation)',
+            'description': 'Local AI model runner (for subtitle correction and content generation)',
             'required': False,
             'check_cmd': ['ollama', '--version'],
             'install': {
@@ -48,7 +48,8 @@ class DependencyManager:
                 'linux': 'curl -fsSL https://ollama.com/install.sh | sh',
                 'windows': 'Download from https://ollama.com/download'
             },
-            'post_install': 'ollama pull llama2'
+            'post_install': 'ollama serve',
+            'models': ['qwen2.5:latest', 'llama3.2:latest']
         },
         'obs': {
             'name': 'OBS Studio',
@@ -172,6 +173,21 @@ class DependencyManager:
                 return True, path
         
         return False, None
+    
+    def check_ollama_models(self) -> Dict[str, bool]:
+        """Check which Ollama models are available"""
+        try:
+            import requests
+            response = requests.get('http://localhost:11434/api/tags', timeout=5)
+            if response.status_code == 200:
+                models_data = response.json().get('models', [])
+                installed_models = {m.get('name') for m in models_data}
+                
+                recommended_models = self.DEPENDENCIES.get('ollama', {}).get('models', [])
+                return {model: model in installed_models for model in recommended_models}
+        except Exception:
+            pass
+        return {}
     
     def check_all(self) -> Dict[str, Dict]:
         """Check all dependencies"""

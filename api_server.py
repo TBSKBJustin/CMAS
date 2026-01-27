@@ -47,6 +47,10 @@ class EventCreate(BaseModel):
     whisper_model: str = "base"
     subtitle_max_length: int = 84
     subtitle_split_on_word: bool = True
+    ai_model: str = "qwen2.5:latest"
+    ai_correct_subtitles: bool = True
+    ai_generate_summary: bool = True
+    ai_summary_length: str = "medium"
     modules: Optional[Dict[str, Any]] = None
 
 
@@ -115,6 +119,10 @@ async def create_event(event_data: EventCreate):
             subtitle_split_on_word=event_data.subtitle_split_on_word,
             language=event_data.language,
             whisper_model=event_data.whisper_model,
+            ai_model=event_data.ai_model,
+            ai_correct_subtitles=event_data.ai_correct_subtitles,
+            ai_generate_summary=event_data.ai_generate_summary,
+            ai_summary_length=event_data.ai_summary_length,
             modules=event_data.modules
         )
         
@@ -166,6 +174,13 @@ async def attach_video(event_id: str, video_data: VideoAttach):
 async def check_dependencies():
     """Check all dependencies"""
     results = dependency_manager.check_all()
+    
+    # Add Ollama model check
+    ollama_installed = results.get('ollama', {}).get('installed', False)
+    if ollama_installed:
+        ollama_models = dependency_manager.check_ollama_models()
+        results['ollama']['models'] = ollama_models
+    
     return results
 
 
@@ -263,6 +278,113 @@ async def check_dependency(dep_key: str):
         'installed': is_installed,
         'version': version
     }
+
+
+@app.get('/api/models/whisper')
+async def get_whisper_models():
+    """Get available Whisper models"""
+    try:
+        from pathlib import Path
+        import yaml
+        
+        models_list = []
+        
+        # Check default models directory
+        models_dir = Path('../whisper.cpp/models')
+        if models_dir.exists():
+            for model_file in models_dir.glob('ggml-*.bin'):
+                model_name = model_file.stem.replace('ggml-', '')
+                models_list.append({
+                    'value': model_name,
+                    'label': model_name.capitalize(),
+                    'path': str(model_file),
+                    'size': model_file.stat().st_size
+                })
+        
+        # Check custom path from config
+        config_path = Path('config/config.yaml')
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f) or {}
+            
+            custom_models_dir = config.get('modules', {}).get('subtitles', {}).get('whispercpp', {}).get('models_dir')
+            if custom_models_dir:
+                custom_dir = Path(custom_models_dir)
+                if custom_dir.exists():
+                    for model_file in custom_dir.glob('ggml-*.bin'):
+                        model_name = model_file.stem.replace('ggml-', '')
+                        # Avoid duplicates
+                        if not any(m['value'] == model_name for m in models_list):
+                            models_list.append({
+                                'value': model_name,
+                                'label': model_name.capitalize(),
+                                'path': str(model_file),
+                                'size': model_file.stat().st_size
+                            })
+        
+        # Sort by common model order
+        model_order = ['tiny', 'base', 'small', 'medium', 'large-v3', 'large-v2', 'large']
+        models_list.sort(key=lambda x: model_order.index(x['value']) if x['value'] in model_order else 999)
+        
+        return {
+            'models': models_list,
+            'default': 'base' if any(m['value'] == 'base' for m in models_list) else (models_list[0]['value'] if models_list else None)
+        }
+    except Exception as e:
+        return {'models': [], 'default': None, 'error': str(e)}
+
+
+@app.get('/api/models/ollama')
+async def get_ollama_models():
+    """Get available Ollama models"""
+    try:
+        import requests
+        
+        response = requests.get('http://localhost:11434/api/tags', timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            models = data.get('models', [])
+            
+            models_list = []
+            for model in models:
+                model_name = model.get('name', '')
+                models_list.append({
+                    'value': model_name,
+                    'label': model_name,
+                    'size': model.get('size', 0),
+                    'modified': model.get('modified_at', '')
+                })
+            
+            # Determine default (prefer qwen2.5, then llama3.2)
+            default = None
+            for preferred in ['qwen2.5:latest', 'llama3.2:latest', 'gemma2:latest']:
+                if any(m['value'] == preferred for m in models_list):
+                    default = preferred
+                    break
+            
+            if not default and models_list:
+                default = models_list[0]['value']
+            
+            return {
+                'models': models_list,
+                'default': default,
+                'service_available': True
+            }
+        else:
+            return {
+                'models': [],
+                'default': None,
+                'service_available': False,
+                'error': f'Ollama API returned status {response.status_code}'
+            }
+    except Exception as e:
+        return {
+            'models': [],
+            'default': None,
+            'service_available': False,
+            'error': str(e)
+        }
 
 
 if __name__ == '__main__':
