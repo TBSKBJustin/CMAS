@@ -46,7 +46,11 @@ class WhisperCppEngine:
         # Load custom model path from config if available
         custom_model = config_data.get('model_path')
         if custom_model:
-            self.model_path = Path(custom_model)
+            model_path = Path(custom_model)
+            # Convert relative path to absolute
+            if not model_path.is_absolute():
+                model_path = Path.cwd() / model_path
+            self.model_path = model_path
         else:
             # Build model path from models_dir + model name
             model_file = self.SUPPORTED_MODELS.get(model, self.SUPPORTED_MODELS['base'])
@@ -182,14 +186,15 @@ class WhisperCppEngine:
             output_dir_path = Path(output_dir)
             output_dir_path.mkdir(parents=True, exist_ok=True)
             
-            base_name = Path(input_path).stem
+            # Sanitize base name to avoid issues with spaces
+            base_name = Path(input_path).stem.replace(' ', '_')
             output_files = {}
             
             # Build whisper.cpp command
             cmd = [
                 self.whisper_bin,
-                "-m", str(self.model_path),
-                "-f", input_path,
+                "-m", str(self.model_path.absolute()),  # Use absolute path
+                "-f", str(Path(input_path).absolute()),  # Use absolute path
             ]
             
             # Set language
@@ -262,7 +267,9 @@ class WhisperCppEngine:
     def _extract_audio(self, video_path: str, output_dir: str) -> Optional[str]:
         """Extract audio from video using ffmpeg"""
         try:
-            audio_path = Path(output_dir) / f"{Path(video_path).stem}_audio.wav"
+            # Sanitize filename to avoid issues with spaces
+            stem = Path(video_path).stem.replace(' ', '_')
+            audio_path = Path(output_dir) / f"{stem}_audio.wav"
             
             cmd = [
                 "ffmpeg",

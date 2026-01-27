@@ -93,6 +93,9 @@ async def get_event(event_id: str):
     state = workflow_controller.state_store.get_workflow_state(event_id)
     event['workflow_state'] = state
     
+    # Add input_video flag
+    event['input_video'] = len(event.get('inputs', {}).get('video_files', [])) > 0
+    
     return event
 
 
@@ -132,9 +135,23 @@ async def run_event_workflow(event_id: str, workflow_data: Optional[WorkflowRun]
 @app.post('/api/events/{event_id}/attach')
 async def attach_video(event_id: str, video_data: VideoAttach):
     """Attach video to event"""
-    success = event_manager.add_video_input(event_id, video_data.video_path)
+    # Check if event exists
+    event = event_manager.load_event(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail='Event not found')
+    
+    # Validate video path exists
+    video_path = Path(video_data.video_path)
+    if not video_path.exists():
+        raise HTTPException(status_code=400, detail='Video file does not exist')
+    
+    if not video_path.is_file():
+        raise HTTPException(status_code=400, detail='Path is not a file')
+    
+    # Add video to event
+    success = event_manager.add_video_input(event_id, str(video_path.absolute()))
     if success:
-        return {'message': 'Video attached successfully'}
+        return {'message': 'Video attached successfully', 'path': str(video_path)}
     else:
         raise HTTPException(status_code=400, detail='Failed to attach video')
 

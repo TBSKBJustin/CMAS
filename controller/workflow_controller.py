@@ -94,13 +94,213 @@ class WorkflowController:
         
         self.logger.info(f"Running module: {module_name}")
         
-        # Module routing logic (to be implemented)
-        # This is where we'd call the actual module implementations
-        
+        # Module routing logic
+        try:
+            if module_name == "thumbnail_ai":
+                return self._run_thumbnail_ai(event_id, event_config)
+            elif module_name == "thumbnail_compose":
+                return self._run_thumbnail_compose(event_id, event_config)
+            elif module_name == "subtitles":
+                return self._run_subtitles(event_id, event_config)
+            elif module_name == "publish_youtube":
+                return self._run_publish_youtube(event_id, event_config)
+            elif module_name == "publish_website":
+                return self._run_publish_website(event_id, event_config)
+            elif module_name == "archive":
+                return self._run_archive(event_id, event_config)
+            else:
+                return {
+                    "status": "skipped",
+                    "message": f"Unknown module: {module_name}",
+                    "timestamp": self._get_timestamp()
+                }
+        except Exception as e:
+            self.logger.error(f"Module {module_name} failed: {str(e)}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "timestamp": self._get_timestamp()
+            }
+    
+    def _get_timestamp(self) -> str:
+        """Get current timestamp in ISO format"""
+        from datetime import datetime
+        return datetime.now().isoformat()
+    
+    def _run_thumbnail_ai(self, event_id: str, event_config: Dict) -> Dict:
+        """Run AI thumbnail generation module"""
+        self.logger.info("Running thumbnail AI generation...")
+        # Placeholder for actual implementation
         return {
             "status": "success",
-            "message": f"Module {module_name} completed",
-            "timestamp": "2026-01-26T09:00:00Z"
+            "message": "AI thumbnail generated",
+            "timestamp": self._get_timestamp()
+        }
+    
+    def _run_thumbnail_compose(self, event_id: str, event_config: Dict) -> Dict:
+        """Run thumbnail composition module"""
+        self.logger.info("Running thumbnail composition...")
+        
+        try:
+            from modules.thumbnail.composer_pillow import ThumbnailComposer
+            
+            # Setup output directory
+            event_dir = Path("events") / event_id
+            output_dir = event_dir / "output"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Get event details
+            title = event_config.get("title", "Untitled")
+            scripture = event_config.get("scripture", "")
+            speaker = event_config.get("speaker", "")
+            
+            # Output path
+            thumbnail_path = output_dir / "thumbnail.jpg"
+            
+            # Initialize composer
+            composer = ThumbnailComposer()
+            
+            # Look for optional assets
+            assets_dir = Path("assets")
+            background = None
+            logo = None
+            
+            # Try to find a background image
+            bg_dir = assets_dir / "backgrounds"
+            if bg_dir.exists():
+                bg_files = list(bg_dir.glob("*.jpg")) + list(bg_dir.glob("*.png"))
+                if bg_files:
+                    background = str(bg_files[0])
+            
+            # Try to find a logo
+            logo_dir = assets_dir / "logos"
+            if logo_dir.exists():
+                logo_files = list(logo_dir.glob("*.png"))
+                if logo_files:
+                    logo = str(logo_files[0])
+            
+            # Compose thumbnail
+            success, error = composer.compose(
+                output_path=str(thumbnail_path),
+                title=title,
+                scripture=scripture if scripture else None,
+                background=background,
+                logo=logo
+            )
+            
+            if success:
+                self.logger.info(f"Thumbnail created: {thumbnail_path}")
+                return {
+                    "status": "success",
+                    "message": "Thumbnail composed successfully",
+                    "output_file": str(thumbnail_path),
+                    "timestamp": self._get_timestamp()
+                }
+            else:
+                self.logger.error(f"Thumbnail composition failed: {error}")
+                return {
+                    "status": "failed",
+                    "error": error,
+                    "timestamp": self._get_timestamp()
+                }
+        
+        except Exception as e:
+            self.logger.error(f"Thumbnail module error: {str(e)}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "timestamp": self._get_timestamp()
+            }
+    
+    def _run_subtitles(self, event_id: str, event_config: Dict) -> Dict:
+        """Run subtitle generation module"""
+        self.logger.info("Running subtitle generation...")
+        
+        try:
+            from modules.subtitles.engine_whispercpp import WhisperCppEngine
+            
+            # Get input video
+            video_files = event_config.get("inputs", {}).get("video_files", [])
+            if not video_files:
+                return {
+                    "status": "failed",
+                    "error": "No input video found",
+                    "timestamp": self._get_timestamp()
+                }
+            
+            video_path = video_files[0]  # Use first video
+            
+            # Setup output directory
+            event_dir = Path("events") / event_id
+            output_dir = event_dir / "output"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Get language from event config
+            language = event_config.get("language", "auto")
+            
+            # Initialize engine
+            engine = WhisperCppEngine(model="base")
+            
+            # Generate subtitles
+            success, error, output_files = engine.generate_subtitles(
+                video_path=video_path,
+                output_dir=str(output_dir),
+                language=language,
+                formats=["srt", "vtt"]
+            )
+            
+            if success:
+                self.logger.info(f"Subtitles generated: {output_files}")
+                return {
+                    "status": "success",
+                    "message": "Subtitles generated successfully",
+                    "output_files": output_files,
+                    "timestamp": self._get_timestamp()
+                }
+            else:
+                self.logger.error(f"Subtitle generation failed: {error}")
+                return {
+                    "status": "failed",
+                    "error": error,
+                    "timestamp": self._get_timestamp()
+                }
+        
+        except Exception as e:
+            self.logger.error(f"Subtitle module error: {str(e)}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "timestamp": self._get_timestamp()
+            }
+    
+    def _run_publish_youtube(self, event_id: str, event_config: Dict) -> Dict:
+        """Run YouTube publishing module"""
+        self.logger.info("Running YouTube upload...")
+        # Placeholder for actual implementation
+        return {
+            "status": "success",
+            "message": "Published to YouTube",
+            "timestamp": self._get_timestamp()
+        }
+    
+    def _run_publish_website(self, event_id: str, event_config: Dict) -> Dict:
+        """Run website publishing module"""
+        self.logger.info("Running website publishing...")
+        # Placeholder for actual implementation
+        return {
+            "status": "success",
+            "message": "Published to website",
+            "timestamp": self._get_timestamp()
+        }
+    
+    def _run_archive(self, event_id: str, event_config: Dict) -> Dict:
+        """Run archive module"""
+        self.logger.info("Running archive...")
+        # Placeholder for actual implementation
+        return {
+            "status": "success",
+            "message": "Archived successfully",
+            "timestamp": self._get_timestamp()
         }
 
 

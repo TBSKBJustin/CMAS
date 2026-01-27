@@ -23,8 +23,13 @@ export const createEvent = async (eventData) => {
   return data
 }
 
-export const runWorkflow = async (eventId) => {
-  const { data } = await api.post(`/events/${eventId}/run`)
+export const runWorkflow = async (eventId, force = false) => {
+  const { data } = await api.post(`/events/${eventId}/run`, { force })
+  return data
+}
+
+export const attachVideo = async (eventId, videoPath) => {
+  const { data } = await api.post(`/events/${eventId}/attach`, { video_path: videoPath })
   return data
 }
 

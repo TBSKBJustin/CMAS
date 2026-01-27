@@ -79,26 +79,42 @@ class StateStore:
         """Retrieve overall workflow state"""
         state_file = self.events_dir / event_id / "logs" / "workflow_state.json"
         if not state_file.exists():
-            return None
+            return {
+                "event_id": event_id,
+                "overall_status": "pending",
+                "modules": {}
+            }
         
         with open(state_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            state = json.load(f)
+            # Rename module_results to modules for frontend compatibility
+            if "module_results" in state:
+                state["modules"] = state.pop("module_results")
+            return state
     
     def _compute_overall_status(self, results: Dict) -> str:
         """
         Compute overall workflow status from module results
         
         Returns:
-            One of: "success", "partial", "failed"
+            One of: "pending", "processing", "completed", "failed"
         """
         if not results:
-            return "failed"
+            return "pending"
         
         statuses = [r.get("status", "unknown") for r in results.values()]
         
-        if all(s == "success" for s in statuses):
-            return "success"
-        elif any(s == "success" for s in statuses):
-            return "partial"
-        else:
+        # If any module is running, overall is processing
+        if any(s == "running" for s in statuses):
+            return "processing"
+        
+        # If all modules succeeded, overall is completed
+        if all(s in ["success", "skipped"] for s in statuses):
+            return "completed"
+        
+        # If any failed, overall is failed
+        if any(s == "failed" for s in statuses):
             return "failed"
+        
+        # Default to pending
+        return "pending"
