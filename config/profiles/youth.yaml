@@ -1,0 +1,42 @@
+# Youth Service Profile
+# Configuration for youth meetings - minimal processing
+
+system:
+  name: "Youth Service Profile"
+
+modules:
+  obs_monitor:
+    enabled: false
+  
+  thumbnail:
+    enabled: false
+  
+  ai_generator:
+    enabled: false
+  
+  subtitles:
+    enabled: true
+    engine: "whispercpp"
+    default_language: "en"
+  
+  youtube:
+    enabled: true
+    default_privacy: "unlisted"
+    default_playlist: "YOUR_YOUTH_PLAYLIST_ID"
+  
+  website:
+    enabled: false
+  
+  archive:
+    enabled: false
+
+event_defaults:
+  modules:
+    live_control: false
+    ingest_obs_monitor: false
+    thumbnail_ai: false
+    thumbnail_compose: false
+    subtitles: true
+    publish_youtube: true
+    publish_website: false
+    archive: false

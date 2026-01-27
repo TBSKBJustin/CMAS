@@ -1,0 +1,160 @@
+"""
+Event Manager - Create, load, and update events
+"""
+
+import json
+import os
+from pathlib import Path
+from typing import Dict, Optional, List
+from datetime import datetime
+
+
+class EventManager:
+    """Manages event creation, loading, and updates"""
+    
+    def __init__(self, events_dir: str = "events"):
+        self.events_dir = Path(events_dir)
+        self.events_dir.mkdir(exist_ok=True)
+    
+    def create_event(
+        self,
+        title: str,
+        speaker: str,
+        date: Optional[str] = None,
+        time: Optional[str] = None,
+        series: Optional[str] = None,
+        scripture: Optional[str] = None,
+        language: str = "auto",
+        modules: Optional[Dict[str, bool]] = None
+    ) -> str:
+        """
+        Create a new event with the specified configuration
+        
+        Args:
+            title: Event/sermon title
+            speaker: Speaker/pastor name
+            date: Event date (YYYY-MM-DD), defaults to today
+            time: Event time (HHMM), defaults to current time
+            series: Sermon series name (optional)
+            scripture: Scripture reference (optional)
+            language: Language code (default: auto)
+            modules: Module toggle configuration (optional)
+            
+        Returns:
+            event_id: Generated event identifier
+        """
+        # Generate event ID
+        if not date:
+            date = datetime.now().strftime("%Y-%m-%d")
+        if not time:
+            time = datetime.now().strftime("%H%M")
+        
+        # Create safe slug from title
+        slug = self._slugify(title)
+        event_id = f"{date}_{time}_{slug}"
+        
+        # Default module configuration
+        if modules is None:
+            modules = {
+                "live_control": False,
+                "ingest_obs_monitor": True,
+                "thumbnail_ai": True,
+                "thumbnail_compose": True,
+                "subtitles": True,
+                "publish_youtube": True,
+                "publish_website": True,
+                "archive": False
+            }
+        
+        # Event configuration
+        event_config = {
+            "event_id": event_id,
+            "title": title,
+            "series": series,
+            "scripture": scripture,
+            "speaker": speaker,
+            "language": language,
+            "date": date,
+            "time": time,
+            "created_at": datetime.now().isoformat(),
+            "inputs": {
+                "video_files": []
+            },
+            "modules": modules
+        }
+        
+        # Create event directory structure
+        event_path = self.events_dir / event_id
+        event_path.mkdir(parents=True, exist_ok=True)
+        (event_path / "input").mkdir(exist_ok=True)
+        (event_path / "output").mkdir(exist_ok=True)
+        (event_path / "logs").mkdir(exist_ok=True)
+        
+        # Save event configuration
+        config_file = event_path / "event.json"
+        with open(config_file, 'w', encoding='utf-8') as f:
+            json.dump(event_config, f, indent=2, ensure_ascii=False)
+        
+        return event_id
+    
+    def load_event(self, event_id: str) -> Optional[Dict]:
+        """Load event configuration from disk"""
+        event_path = self.events_dir / event_id / "event.json"
+        if not event_path.exists():
+            return None
+        
+        with open(event_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    
+    def update_event(self, event_id: str, updates: Dict) -> bool:
+        """
+        Update event configuration
+        
+        Args:
+            event_id: Event identifier
+            updates: Dictionary of fields to update
+            
+        Returns:
+            Success status
+        """
+        event_config = self.load_event(event_id)
+        if not event_config:
+            return False
+        
+        # Merge updates
+        event_config.update(updates)
+        event_config["updated_at"] = datetime.now().isoformat()
+        
+        # Save updated configuration
+        event_path = self.events_dir / event_id / "event.json"
+        with open(event_path, 'w', encoding='utf-8') as f:
+            json.dump(event_config, f, indent=2, ensure_ascii=False)
+        
+        return True
+    
+    def add_video_input(self, event_id: str, video_path: str) -> bool:
+        """Add a video file to event inputs"""
+        event_config = self.load_event(event_id)
+        if not event_config:
+            return False
+        
+        if video_path not in event_config["inputs"]["video_files"]:
+            event_config["inputs"]["video_files"].append(video_path)
+            return self.update_event(event_id, event_config)
+        
+        return True
+    
+    def list_events(self) -> List[str]:
+        """List all event IDs"""
+        if not self.events_dir.exists():
+            return []
+        
+        return [d.name for d in self.events_dir.iterdir() if d.is_dir()]
+    
+    def _slugify(self, text: str) -> str:
+        """Convert text to URL-safe slug"""
+        # Simple slugification
+        text = text.lower()
+        text = ''.join(c if c.isalnum() or c in ' -_' else '' for c in text)
+        text = '-'.join(text.split())
+        return text[:50]  # Limit length

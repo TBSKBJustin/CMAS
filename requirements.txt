@@ -1,0 +1,27 @@
+# Python dependencies for Church Media Automation System
+
+# Core dependencies
+pyyaml>=6.0
+pillow>=10.0.0
+requests>=2.31.0
+
+# FastAPI Server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+
+# File monitoring (for OBS monitor)
+watchdog>=3.0.0
+
+# Optional: OBS WebSocket control
+# obs-websocket-py>=1.0
+
+# Optional: YouTube API
+# google-api-python-client>=2.100.0
+# google-auth-oauthlib>=1.1.0
+# google-auth-httplib2>=0.1.1
+
+# Development dependencies
+# pytest>=7.4.0
+# black>=23.9.0
+# flake8>=6.1.0

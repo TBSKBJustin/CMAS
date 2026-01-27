@@ -1,0 +1,109 @@
+# Church Media Automation System - Configuration
+
+# Global Settings
+system:
+  name: "Church Media Automation System"
+  version: "1.0.0"
+  events_dir: "events"
+  assets_dir: "assets"
+
+# Default Module Settings
+modules:
+  # OBS Monitor
+  obs_monitor:
+    enabled: false
+    watch_path: "/path/to/obs/recordings"
+    file_extensions:
+      - ".mp4"
+      - ".mkv"
+      - ".mov"
+  
+  # OBS Control (WebSocket)
+  obs_control:
+    enabled: false
+    host: "localhost"
+    port: 4455
+    password: ""
+  
+  # Thumbnail Generation
+  thumbnail:
+    enabled: true
+    default_size:
+      width: 1280
+      height: 720
+    default_background: "assets/backgrounds/default.jpg"
+    default_character: "assets/pastor/default.png"
+    logo: "assets/logos/church-logo.png"
+    fonts:
+      title: "assets/fonts/bold.ttf"
+      scripture: "assets/fonts/regular.ttf"
+  
+  # AI Character Generation
+  ai_generator:
+    enabled: true
+    provider: "ollama"  # ollama, stable-diffusion, dalle, etc.
+    ollama:
+      base_url: "http://localhost:11434"
+      model: "llama2"
+    fallback_asset: "assets/pastor/default-character.png"
+  
+  # Subtitle Generation
+  subtitles:
+    enabled: true
+    engine: "whispercpp"  # whispercpp or whisperx
+    whispercpp:
+      model_path: "models/ggml-base.bin"
+      whisper_bin: "whisper"
+    whisperx:
+      model_name: "base"
+      device: "cpu"
+      align: true
+      diarize: false
+    default_language: "auto"
+    output_formats:
+      - "srt"
+      - "vtt"
+    fallback_to_audio_extraction: true
+  
+  # YouTube Upload
+  youtube:
+    enabled: false
+    credentials_path: "config/youtube_credentials.json"
+    default_privacy: "private"  # private, unlisted, public
+    default_category: "22"  # People & Blogs
+    default_playlist: ""
+  
+  # Website Publishing
+  website:
+    enabled: false
+    repo_path: "/path/to/website/repo"
+    content_dir: "content/sermons"
+    auto_commit: true
+    auto_push: false
+  
+  # Archive
+  archive:
+    enabled: false
+    archive_root: "/archive/church-media"
+    compress: false
+    keep_local_copy: true
+    cleanup_after_days: 90
+
+# Default Event Template
+event_defaults:
+  language: "auto"
+  modules:
+    live_control: false
+    ingest_obs_monitor: false
+    thumbnail_ai: true
+    thumbnail_compose: true
+    subtitles: true
+    publish_youtube: false
+    publish_website: false
+    archive: false
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/cmas.log"

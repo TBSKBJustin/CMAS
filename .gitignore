@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+events/*/
+!events/README.md
+logs/
+*.log
+
+# Credentials and secrets
+config/youtube_credentials.json
+config/youtube_token.pickle
+config/*_secret.json
+*.key
+*.pem
+
+# Media files
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.flv
+*.webm
+*.mp3
+*.wav
+*.jpg
+*.jpeg
+*.png
+!assets/**/*.jpg
+!assets/**/*.jpeg
+!assets/**/*.png
+
+# Models
+models/
+*.bin
+*.ggml
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

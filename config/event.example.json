@@ -1,0 +1,30 @@
+# Example Event Configuration
+# This file is created automatically when you create a new event
+# You can also create it manually and run the workflow
+
+{
+  "event_id": "2026-01-26_0900_sunday-service",
+  "title": "Miracles and Wonders",
+  "series": "Acts",
+  "scripture": "15:12",
+  "speaker": "Pastor Name",
+  "language": "auto",
+  "date": "2026-01-26",
+  "time": "0900",
+  "created_at": "2026-01-26T09:00:00Z",
+  "inputs": {
+    "video_files": [
+      "events/2026-01-26_0900_sunday-service/input/recording.mp4"
+    ]
+  },
+  "modules": {
+    "live_control": false,
+    "ingest_obs_monitor": true,
+    "thumbnail_ai": true,
+    "thumbnail_compose": true,
+    "subtitles": true,
+    "publish_youtube": true,
+    "publish_website": true,
+    "archive": false
+  }
+}

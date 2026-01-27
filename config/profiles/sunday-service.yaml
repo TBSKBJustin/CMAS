@@ -1,0 +1,45 @@
+# Sunday Service Profile
+# Quick configuration for regular Sunday morning services
+
+system:
+  name: "Sunday Service Profile"
+
+modules:
+  obs_monitor:
+    enabled: true
+    watch_path: "/path/to/obs/recordings"
+  
+  thumbnail:
+    enabled: true
+  
+  ai_generator:
+    enabled: true
+  
+  subtitles:
+    enabled: true
+    engine: "whispercpp"
+    default_language: "en"
+  
+  youtube:
+    enabled: true
+    default_privacy: "unlisted"
+    default_playlist: "YOUR_SUNDAY_SERMONS_PLAYLIST_ID"
+  
+  website:
+    enabled: true
+    auto_commit: true
+    auto_push: true
+  
+  archive:
+    enabled: false
+
+event_defaults:
+  modules:
+    live_control: false
+    ingest_obs_monitor: true
+    thumbnail_ai: true
+    thumbnail_compose: true
+    subtitles: true
+    publish_youtube: true
+    publish_website: true
+    archive: false
