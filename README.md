@@ -402,4 +402,4 @@ If the module input/output contract stays consistent, swaps are painless.
 
 ## License
 
-MIT License - see LICENSE file for details
+Apache-2.0 - see LICENSE file for details
