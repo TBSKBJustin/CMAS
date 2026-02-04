@@ -72,10 +72,74 @@ Key files: `api_server.py`, `controller/workflow_controller.py`, `modules/subtit
 ## Typical user flow
 
 1. Create an event (title, speaker, time)
-2. Enable required modules (subtitles, thumbnail, publish)
-3. Add or auto-detect video input (OBS monitor or manual)
-4. Run workflow
-5. Review outputs and publish
+2. Configure thumbnail settings (optional: customize fonts, image sizes, elements)
+3. Enable required modules (subtitles, thumbnail, publish)
+4. Add or auto-detect video input (OBS monitor or manual)
+5. Run workflow
+6. Review outputs and publish
+7. Edit event settings if needed (via Settings button in event detail page)
+
+---
+
+## Thumbnail Customization
+
+The system provides comprehensive thumbnail generation with flexible customization options:
+
+### Customizable Elements
+
+Toggle any of these 5 elements on/off:
+- **Title** - Main sermon/event title
+- **Subtitle** - Speaker name or custom text
+- **Meeting Type** - Service type (Sunday Service, Youth Night, Prayer Meeting, etc.)
+- **Logo** - Church logo (top-left corner)
+- **Pastor Image** - Pastor portrait (bottom-left corner)
+
+### Font Selection
+
+**Advanced Font Selector** with search capability:
+- Search through 156+ system fonts (including Chinese fonts 🇨🇳)
+- Direct input support - type font name or full path
+- Auto-detection with Chinese font priority
+- Separate font selection for title, subtitle, and meeting type
+- Adjustable font sizes (24-200px)
+
+### Image Size Customization
+
+**Logo Size:**
+- Width: 50-800px (default: 200px)
+- Height: 50-800px (default: 200px)
+
+**Pastor Image Size:**
+- Width: 50-800px (default: 250px)
+- Height: 50-800px (default: 250px)
+
+### Where to Configure
+
+1. **Global Defaults** (Settings page)
+   - Set default fonts, sizes, and image dimensions
+   - Configure preset meeting types
+   - Choose default logo and pastor images
+   - These apply to all new events
+
+2. **Per-Event** (Event Creation)
+   - Customize during event creation
+   - Collapsible "🎨 Thumbnail Composition Settings" panel
+   - Override global defaults for specific events
+
+3. **After Creation** (Event Settings)
+   - Edit event configuration via ⚙️ Settings button
+   - Update title, speaker, scripture
+   - Modify thumbnail settings
+   - Adjust image sizes and fonts
+
+### Image Resources
+
+Upload your images to:
+- `assets/logos/` - Church logos (PNG/JPG)
+- `assets/pastor/` - Pastor photos (PNG/JPG)
+- `assets/backgrounds/` - Background images (PNG/JPG)
+
+**Note:** Logo and pastor images are excluded from git (privacy). Only `.gitkeep` files are tracked.
 
 ---
 
@@ -102,10 +166,24 @@ How to verify:
 ls -lh events/NEW_EVENT_ID/output/*.srt
 ```
 
----
+--**Subtitle Correction:** Post-process generated `.srt` to correct punctuation, timing edge-cases, and formatting
+- **Content Summary:** Produce a short summary of the sermon/talk as a `.txt` alongside the corrected `.srt`
+- **Thumbnail Background:** Generate AI-powered background images (1280×720) using models like `x/z-image-turbo`
 
-## Subtitle segmentation (controls)
+These features are optional and controlled per-event via module settings.
 
+### Thumbnail AI Generation
+
+The system uses Ollama for AI-generated backgrounds:
+- Model: `x/z-image-turbo` (or configurable in Settings)
+- Resolution: 1280×720px
+- Fallback: If AI generation fails, uses images from `assets/backgrounds/`
+- Priority: AI background → User-specified → Assets folder
+
+Configure in Settings:
+- AI Backend: Ollama
+- AI URL: `http://localhost:11434`
+- Model: Select from available image models
 New subtitle settings are exposed in the Event Create UI:
 
 - `Max Characters per Line` (recommended defaults: 60–84 for English, 40–60 for Chinese)
@@ -169,10 +247,21 @@ If Ollama is available at `http://localhost:11434`, the system can:
 - Post-process generated `.srt` to correct punctuation, timing edge-cases, and formatting
 - Produce a short summary of the sermon / talk as a `.txt` alongside the corrected `.srt`
 
-These features are optional and controlled per-event via `ai_content` module settings.
+**Subtitles:**
+- Server logs: the API server prints processing steps and applied subtitle settings
+- Filenames: ensure input video filenames are accessible and do not contain problematic characters (spaces are normalized by the system)
+- Models: verify `models/` contains required `.bin` files
+- FFmpeg: run `ffmpeg -version` to confirm installation
 
----
+**Thumbnails:**
+- Font detection: Run the system to auto-detect fonts; check Settings page for font count
+- Image sizes: Verify `logo_size` and `pastor_size` in event's `thumbnail_settings`
+- Missing images: Upload to `assets/logos/` or `assets/pastor/` directories
+- AI generation: Check Ollama is running at `http://localhost:11434` and model is available
 
+**Event Settings:**
+- Use the ⚙️ Settings button on event detail page to modify configuration
+- Changes take effect on next workflow run (e.g., re-run thumbnail composition)
 ## Developer notes
 
 - Modules follow a simple contract: JSON input → produce files + result JSON
