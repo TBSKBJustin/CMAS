@@ -480,8 +480,8 @@ async def list_event_modules(event_id: str):
         {'name': 'subtitles', 'label': 'Generate Subtitles', 'description': 'Generate SRT/VTT subtitles using Whisper'},
         {'name': 'subtitle_correction', 'label': 'Correct Subtitles (AI)', 'description': 'Fix spelling and transcription errors using AI'},
         {'name': 'content_summary', 'label': 'Generate Content Summary (AI)', 'description': 'Create content summary for thumbnails and posts'},
-        {'name': 'ai_content', 'label': 'AI Content Processing', 'description': 'Correct subtitles and generate summary (combined)'},
-        {'name': 'thumbnail_compose', 'label': 'Compose Thumbnail', 'description': 'Generate thumbnail image'},
+        {'name': 'thumbnail_ai', 'label': 'Generate AI Background', 'description': 'Generate thumbnail background image using AI'},
+        {'name': 'thumbnail_compose', 'label': 'Compose Thumbnail', 'description': 'Generate thumbnail image with text and elements'},
         {'name': 'publish_youtube', 'label': 'Publish to YouTube', 'description': 'Upload video to YouTube'},
         {'name': 'publish_website', 'label': 'Publish to Website', 'description': 'Generate website post'},
     ]

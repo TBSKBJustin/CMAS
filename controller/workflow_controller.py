@@ -361,6 +361,33 @@ class WorkflowController:
             with open(prompt_file, 'r', encoding='utf-8') as f:
                 prompt = f.read().strip()
             
+            # Clean up prompt: remove markdown headers and metadata
+            # Remove lines starting with # and lines containing "Generated from"
+            lines = prompt.split('\n')
+            cleaned_lines = []
+            skip_next_separator = False
+            
+            for line in lines:
+                stripped = line.strip()
+                # Skip markdown headers
+                if stripped.startswith('#'):
+                    skip_next_separator = True
+                    continue
+                # Skip metadata lines
+                if 'Generated from' in line or 'generated from' in line.lower():
+                    skip_next_separator = True
+                    continue
+                # Skip separator lines (---)
+                if stripped == '---' or stripped == '___' or stripped == '***':
+                    if skip_next_separator:
+                        skip_next_separator = False
+                        continue
+                # Keep non-empty lines
+                if stripped:
+                    cleaned_lines.append(line)
+            
+            prompt = '\n'.join(cleaned_lines).strip()
+            
             self.logger.info(f"Using image prompt: {prompt[:100]}...")
             
             # Get AI generation config

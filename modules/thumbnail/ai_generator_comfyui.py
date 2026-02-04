@@ -135,7 +135,9 @@ class ComfyUIGenerator:
         """Customize workflow with generation parameters"""
         # Update prompt (node 45: CLIPTextEncode)
         if "45" in workflow:
-            workflow["45"]["inputs"]["text"] = prompt
+            # Add negative keywords to prevent text in images
+            enhanced_prompt = f"{prompt}, no text, no words, no letters, no typography, no watermarks"
+            workflow["45"]["inputs"]["text"] = enhanced_prompt
         
         # Update image size (node 41: EmptySD3LatentImage)
         if "41" in workflow:
